@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="水準測量野帳">
+  <title>水準測量野帳</title>
+  <style>
+    :root {
+      --bg: #0f1724;
+      --bg2: #1a2332;
+      --bg-card: #1e293b;
+      --bg-input: #0f172a;
+      --bg-even: #162032;
+      --bg-hover: #1e3a5f;
+      --bg-header: #1e3050;
+      --bdr: #2d3d52;
+      --bdr-focus: #3b82f6;
+      --txt: #e2e8f0;
+      --txt2: #94a3b8;
+      --txt3: #64748b;
+      --blue: #3b82f6;
+      --cyan: #06b6d4;
+      --green: #10b981;
+      --amber: #f59e0b;
+      --red: #ef4444;
+      --purple: #8b5cf6;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { height: 100%; overflow: hidden; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Sans', 'Yu Gothic UI', sans-serif;
+      background: var(--bg);
+      color: var(--txt);
+      display: flex;
+      flex-direction: column;
+      -webkit-tap-highlight-color: transparent;
+      -webkit-touch-callout: none;
+    }
+
+    /* ===== ヘッダー ===== */
+    .hdr {
+      background: linear-gradient(135deg, #1e3a5f, #1a2332);
+      padding: 14px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--bdr);
+      flex-shrink: 0;
+    }
+    .hdr-left { display: flex; align-items: center; gap: 12px; }
+    .hdr-icon {
+      width: 40px; height: 40px;
+      background: linear-gradient(135deg, var(--blue), var(--cyan));
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px;
+      box-shadow: 0 4px 12px rgba(59,130,246,.3);
+    }
+    .hdr h1 { font-size: 18px; font-weight: 700; }
+    .hdr-sub { font-size: 11px; color: var(--txt2); }
+    .hdr-btns { display: flex; gap: 8px; }
+
+    /* ===== ボタン ===== */
+    .btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 10px 16px;
+      border: none; border-radius: 8px;
+      font-family: inherit; font-size: 13px; font-weight: 600;
+      cursor: pointer; white-space: nowrap;
+      transition: all .15s ease;
+      -webkit-appearance: none;
+    }
+    .btn:active { transform: scale(.96); }
+    .btn-pri { background: linear-gradient(135deg, var(--blue), #2563eb); color: #fff; box-shadow: 0 3px 10px rgba(59,130,246,.3); }
+    .btn-ok  { background: linear-gradient(135deg, var(--green), #059669); color: #fff; box-shadow: 0 3px 10px rgba(16,185,129,.3); }
+    .btn-ng  { background: linear-gradient(135deg, var(--red), #dc2626); color: #fff; }
+    .btn-gh  { background: rgba(255,255,255,.06); color: var(--txt2); border: 1px solid var(--bdr); }
+
+    /* ===== プロジェクト情報 ===== */
+    .proj {
+      background: var(--bg2);
+      padding: 10px 20px;
+      display: flex; align-items: center; gap: 14px;
+      border-bottom: 1px solid var(--bdr);
+      flex-shrink: 0;
+      overflow-x: auto;
+    }
+    .proj-f { display: flex; flex-direction: column; gap: 2px; flex-shrink: 0; }
+    .proj-f label { font-size: 10px; font-weight: 600; color: var(--txt2); }
+    .proj-f input {
+      background: var(--bg-input);
+      border: 1px solid var(--bdr);
+      border-radius: 6px;
+      padding: 7px 10px;
+      color: var(--txt);
+      font-family: inherit; font-size: 13px;
+      width: 120px;
+    }
+    .proj-f input:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 2px rgba(59,130,246,.15); }
+    .proj-f input.w-sm { width: 90px; }
+    .proj-f input.w-md { width: 130px; }
+
+    /* ===== メインエリア ===== */
+    .main { flex: 1; overflow: hidden; display: flex; flex-direction: column; padding: 12px 16px; gap: 10px; }
+
+    /* ===== テーブル ===== */
+    .tbl-wrap {
+      flex: 1; overflow: auto; border-radius: 10px;
+      border: 1px solid var(--bdr);
+      background: var(--bg-card);
+      box-shadow: 0 8px 24px rgba(0,0,0,.35);
+      -webkit-overflow-scrolling: touch;
+    }
+    table { width: 100%; border-collapse: collapse; min-width: 740px; }
+    thead { position: sticky; top: 0; z-index: 10; }
+    thead th {
+      background: var(--bg-header);
+      padding: 12px 6px;
+      font-size: 12px; font-weight: 700;
+      color: #fff; text-align: center;
+      border-bottom: 2px solid var(--blue);
+      white-space: nowrap;
+    }
+    thead th.c-no   { width: 44px; }
+    thead th.c-pt   { width: 130px; }
+    thead th.c-num  { width: 120px; }
+    thead th.c-memo { min-width: 100px; }
+    thead th.c-act  { width: 48px; }
+
+    tbody tr { transition: background .1s; }
+    tbody tr:nth-child(even) { background: var(--bg-even); }
+    tbody tr:hover { background: var(--bg-hover); }
+    tbody td {
+      padding: 4px 4px;
+      text-align: center;
+      border-bottom: 1px solid rgba(45,61,82,.4);
+      vertical-align: middle;
+    }
+
+    .rn { font-size: 12px; font-weight: 600; color: var(--txt3); }
+
+    /* テーブル内の入力 */
+    .ci {
+      width: 100%; background: var(--bg-input);
+      border: 1px solid var(--bdr); border-radius: 6px;
+      padding: 10px 8px;
+      color: var(--txt);
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Mono', Menlo, monospace;
+      font-size: 15px; font-weight: 500;
+      text-align: right;
+      -moz-appearance: textfield;
+      -webkit-appearance: none;
+    }
+    .ci::-webkit-inner-spin-button,
+    .ci::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+    .ci:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 2px rgba(59,130,246,.2); }
+    .ci.ci-pt { text-align: left; font-family: inherit; font-size: 14px; }
+    .ci.ci-mm { text-align: left; font-family: inherit; font-size: 13px; }
+    .ci.ci-bs:focus { border-color: var(--cyan); box-shadow: 0 0 0 2px rgba(6,182,212,.2); }
+    .ci.ci-fs:focus { border-color: var(--amber); box-shadow: 0 0 0 2px rgba(245,158,11,.2); }
+
+    /* 計算値 */
+    .cv { font-family: 'SF Mono', Menlo, Consolas, monospace; font-size: 15px; font-weight: 600; padding: 10px 8px; display: block; }
+    .cv-ih { color: var(--purple); }
+    .cv-gh { color: var(--green); }
+    .cv-e  { color: var(--txt3); font-weight: 400; }
+
+    /* 削除ボタン */
+    .bd { background: transparent; border: none; border-radius: 6px; padding: 8px; color: var(--txt3); cursor: pointer; font-size: 18px; }
+    .bd:active { background: rgba(239,68,68,.2); color: var(--red); }
+
+    /* ===== フッター合計行 ===== */
+    tfoot td {
+      background: var(--bg-header);
+      padding: 10px 6px;
+      font-weight: 700; font-size: 14px;
+      border-top: 2px solid var(--blue);
+      text-align: center;
+    }
+    .sl { font-size: 12px; font-weight: 700; color: var(--txt2); letter-spacing: 1px; }
+    .sv { font-family: 'SF Mono', Menlo, Consolas, monospace; font-weight: 700; }
+    .sv-bs { color: var(--cyan); }
+    .sv-fs { color: var(--amber); }
+
+    /* ===== サマリー ===== */
+    .sum { display: flex; gap: 10px; flex-shrink: 0; flex-wrap: wrap; }
+    .sc {
+      flex: 1; min-width: 150px;
+      background: var(--bg-card);
+      border: 1px solid var(--bdr);
+      border-radius: 10px;
+      padding: 12px 14px;
+      display: flex; align-items: center; gap: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,.25);
+    }
+    .si {
+      width: 38px; height: 38px;
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; flex-shrink: 0;
+    }
+    .si-bs { background: rgba(6,182,212,.15); color: var(--cyan); }
+    .si-fs { background: rgba(245,158,11,.15); color: var(--amber); }
+    .si-df { background: rgba(139,92,246,.15); color: var(--purple); }
+    .si-ok { background: rgba(16,185,129,.15); color: var(--green); }
+    .si-ng { background: rgba(239,68,68,.15); color: var(--red); }
+
+    .st { display: flex; flex-direction: column; gap: 1px; }
+    .st-l { font-size: 10px; font-weight: 600; color: var(--txt2); letter-spacing: .5px; }
+    .st-v { font-family: 'SF Mono', Menlo, Consolas, monospace; font-size: 16px; font-weight: 700; }
+    .st-v.v-bs { color: var(--cyan); }
+    .st-v.v-fs { color: var(--amber); }
+    .st-v.v-df { color: var(--purple); }
+    .st-v.v-ok { color: var(--green); }
+    .st-v.v-ng { color: var(--red); }
+
+    /* ===== モーダル ===== */
+    .modal-bg {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,.55); backdrop-filter: blur(4px);
+      z-index: 1000; align-items: center; justify-content: center;
+    }
+    .modal-bg.on { display: flex; }
+    .modal {
+      background: var(--bg-card); border: 1px solid var(--bdr);
+      border-radius: 12px; padding: 24px;
+      width: 90%; max-width: 400px;
+      box-shadow: 0 10px 30px rgba(0,0,0,.4);
+    }
+    .modal h2 { font-size: 17px; margin-bottom: 8px; }
+    .modal p { font-size: 13px; color: var(--txt2); margin-bottom: 18px; line-height: 1.6; }
+    .modal-a { display: flex; gap: 8px; justify-content: flex-end; }
+
+    /* ===== トースト ===== */
+    .toast {
+      position: fixed; bottom: 24px; left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: var(--green); color: #fff;
+      padding: 10px 22px; border-radius: 8px;
+      font-size: 14px; font-weight: 600;
+      z-index: 2000;
+      box-shadow: 0 6px 20px rgba(0,0,0,.35);
+      transition: transform .3s ease;
+      pointer-events: none;
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+
+    /* ===== 追加ボタン行 ===== */
+    .add-row { display: flex; gap: 10px; flex-shrink: 0; }
+    .add-row .btn { flex: 1; justify-content: center; font-size: 15px; padding: 14px; }
+  </style>
+</head>
+<body>
+
+<!-- ヘッダー -->
+<header class="hdr">
+  <div class="hdr-left">
+    <div class="hdr-icon">📐</div>
+    <div>
+      <h1>水準測量野帳</h1>
+      <div class="hdr-sub">Leveling Field Book</div>
+    </div>
+  </div>
+  <div class="hdr-btns">
+    <button class="btn btn-gh" onclick="exportCSV()" title="CSV出力">📄 CSV</button>
+    <button class="btn btn-ng" onclick="confirmClear()">🗑 新規</button>
+    <button class="btn btn-ok" onclick="saveData()">💾 保存</button>
+  </div>
+</header>
+
+<!-- プロジェクト情報 -->
+<div class="proj">
+  <div class="proj-f"><label>路線名</label><input type="text" id="pName" class="w-md" placeholder="例: 1号線"></div>
+  <div class="proj-f"><label>測量日</label><input type="date" id="pDate" class="w-md"></div>
+  <div class="proj-f"><label>観測者</label><input type="text" id="pObs" class="w-sm" placeholder="氏名"></div>
+  <div class="proj-f"><label>記録者</label><input type="text" id="pRec" class="w-sm" placeholder="氏名"></div>
+  <div class="proj-f"><label>天候</label><input type="text" id="pWea" class="w-sm" placeholder="晴"></div>
+  <div class="proj-f"><label>出発点GH(m)</label><input type="text" inputmode="decimal" id="pGH" class="w-sm" placeholder="0.000" oninput="recalc()"></div>
+</div>
+
+<!-- メイン -->
+<main class="main">
+  <div class="tbl-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th class="c-no">No.</th>
+          <th class="c-pt">測点名</th>
+          <th class="c-num">BS 後視<br>(m)</th>
+          <th class="c-num">IH 器械高<br>(m)</th>
+          <th class="c-num">FS 前視<br>(m)</th>
+          <th class="c-num">GH 地盤高<br>(m)</th>
+          <th class="c-memo">備考</th>
+          <th class="c-act"></th>
+        </tr>
+      </thead>
+      <tbody id="tb"></tbody>
+      <tfoot>
+        <tr>
+          <td colspan="2" class="sl">合　計</td>
+          <td><span id="sBs" class="sv sv-bs">—</span></td>
+          <td></td>
+          <td><span id="sFs" class="sv sv-fs">—</span></td>
+          <td></td>
+          <td colspan="2"></td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+
+  <div class="add-row">
+    <button class="btn btn-pri" onclick="addRow()">＋ 測点を追加</button>
+  </div>
+
+  <div class="sum">
+    <div class="sc">
+      <div class="si si-bs">⬆</div>
+      <div class="st"><span class="st-l">ΣBS 後視合計</span><span id="cBs" class="st-v v-bs">—</span></div>
+    </div>
+    <div class="sc">
+      <div class="si si-fs">⬇</div>
+      <div class="st"><span class="st-l">ΣFS 前視合計</span><span id="cFs" class="st-v v-fs">—</span></div>
+    </div>
+    <div class="sc">
+      <div class="si si-df">⇅</div>
+      <div class="st"><span class="st-l">ΣBS − ΣFS</span><span id="cDf" class="st-v v-df">—</span></div>
+    </div>
+    <div class="sc">
+      <div class="si si-ok" id="ckI">✓</div>
+      <div class="st"><span class="st-l">較差チェック</span><span id="cCk" class="st-v v-ok">—</span></div>
+    </div>
+  </div>
+</main>
+
+<!-- モーダル -->
+<div class="modal-bg" id="clrM">
+  <div class="modal">
+    <h2>⚠️ データの消去</h2>
+    <p>現在の野帳データをすべて消去して新規作成しますか？<br>この操作は取り消せません。</p>
+    <div class="modal-a">
+      <button class="btn btn-gh" onclick="closeModal()">キャンセル</button>
+      <button class="btn btn-ng" onclick="clearAll()">消去する</button>
+    </div>
+  </div>
+</div>
+
+<!-- トースト -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ===== データ =====
+let R = [];
+
+function nr() { return { pt:'', bs:'', fs:'', mm:'' }; }
+
+function pf(v) {
+  if (v===''||v===null||v===undefined) return null;
+  const n = parseFloat(v);
+  return isNaN(n) ? null : n;
+}
+
+// ===== 計算 =====
+function calc() {
+  const g0 = pf(document.getElementById('pGH').value);
+  let ih = null;
+  const res = [];
+  for (let i = 0; i < R.length; i++) {
+    const bs = pf(R[i].bs), fs = pf(R[i].fs);
+    let rih = null, rgh = null;
+    if (i === 0) {
+      if (g0 !== null) {
+        rgh = g0;
+        if (bs !== null) { rih = g0 + bs; ih = rih; }
+      }
+    } else {
+      if (ih !== null && fs !== null) rgh = ih - fs;
+      if (rgh !== null && bs !== null) { rih = rgh + bs; ih = rih; }
+    }
+    res.push({ ih: rih, gh: rgh });
+  }
+  return res;
+}
+
+// ===== 描画 =====
+function render() {
+  const tb = document.getElementById('tb');
+  tb.innerHTML = '';
+  const res = calc();
+  R.forEach((r, i) => {
+    const ih = res[i]?.ih, gh = res[i]?.gh;
+    const ihT = ih!==null ? ih.toFixed(3) : '—';
+    const ghT = gh!==null ? gh.toFixed(3) : '—';
+    const ihC = ih!==null ? 'cv-ih' : 'cv-e';
+    const ghC = gh!==null ? 'cv-gh' : 'cv-e';
+    const del = R.length > 1
+      ? `<td><button class="bd" onclick="delRow(${i})">✕</button></td>`
+      : '<td></td>';
+
+    tb.innerHTML += `<tr>
+      <td class="rn">${i+1}</td>
+      <td><input class="ci ci-pt" value="${esc(r.pt)}" data-i="${i}" data-f="pt" placeholder="測点${i+1}"></td>
+      <td><input class="ci ci-bs" inputmode="decimal" value="${r.bs}" data-i="${i}" data-f="bs" placeholder="—"></td>
+      <td><span class="cv ${ihC}">${ihT}</span></td>
+      <td><input class="ci ci-fs" inputmode="decimal" value="${r.fs}" data-i="${i}" data-f="fs" placeholder="—"></td>
+      <td><span class="cv ${ghC}">${ghT}</span></td>
+      <td><input class="ci ci-mm" value="${esc(r.mm)}" data-i="${i}" data-f="mm" placeholder=""></td>
+      ${del}
+    </tr>`;
+  });
+  updSum();
+
+  // イベント登録
+  tb.querySelectorAll('input').forEach(inp => {
+    inp.addEventListener('input', onInput);
+  });
+}
+
+function esc(s) { return s.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function onInput(e) {
+  const el = e.target;
+  const i = parseInt(el.dataset.i);
+  const f = el.dataset.f;
+  if (i >= R.length) return;
+  R[i][f] = el.value;
+  // 計算値だけ更新（入力欄は再描画しない）
+  updCalcLabels();
+  updSum();
+}
+
+// 計算ラベルのみ更新
+function updCalcLabels() {
+  const res = calc();
+  const rows = document.getElementById('tb').rows;
+  for (let i = 0; i < rows.length && i < res.length; i++) {
+    const cells = rows[i].cells;
+    // IH = cells[3], GH = cells[5]
+    const ih = res[i].ih, gh = res[i].gh;
+    const ihSpan = cells[3].querySelector('span');
+    const ghSpan = cells[5].querySelector('span');
+    if (ihSpan) {
+      ihSpan.textContent = ih !== null ? ih.toFixed(3) : '—';
+      ihSpan.className = 'cv ' + (ih !== null ? 'cv-ih' : 'cv-e');
+    }
+    if (ghSpan) {
+      ghSpan.textContent = gh !== null ? gh.toFixed(3) : '—';
+      ghSpan.className = 'cv ' + (gh !== null ? 'cv-gh' : 'cv-e');
+    }
+  }
+}
+
+function updSum() {
+  let sB=0,cB=0,sF=0,cF=0;
+  R.forEach(r => {
+    const b=pf(r.bs), f=pf(r.fs);
+    if(b!==null){sB+=b;cB++;}
+    if(f!==null){sF+=f;cF++;}
+  });
+  const bT=cB?sB.toFixed(3):'—', fT=cF?sF.toFixed(3):'—';
+  document.getElementById('sBs').textContent=bT;
+  document.getElementById('sFs').textContent=fT;
+  document.getElementById('cBs').textContent=bT;
+  document.getElementById('cFs').textContent=fT;
+
+  if(cB&&cF){
+    const d=sB-sF;
+    document.getElementById('cDf').textContent=(d>=0?'+':'')+d.toFixed(3);
+    const res=calc();
+    const fg=res[0]?.gh, lg=res[res.length-1]?.gh;
+    if(fg!==null&&lg!==null){
+      const gd=lg-fg, rd=Math.abs(d-gd);
+      const ck=document.getElementById('cCk');
+      const ci=document.getElementById('ckI');
+      if(rd<0.0005){
+        ck.textContent='✔ 合格'; ck.className='st-v v-ok';
+        ci.className='si si-ok'; ci.textContent='✓';
+      } else {
+        ck.textContent='残差 '+rd.toFixed(3)+'m'; ck.className='st-v v-ng';
+        ci.className='si si-ng'; ci.textContent='!';
+      }
+    } else {
+      document.getElementById('cCk').textContent='—';
+      document.getElementById('cCk').className='st-v v-ok';
+    }
+  } else {
+    document.getElementById('cDf').textContent='—';
+    document.getElementById('cCk').textContent='—';
+    document.getElementById('cCk').className='st-v v-ok';
+    document.getElementById('ckI').className='si si-ok';
+    document.getElementById('ckI').textContent='✓';
+  }
+}
+
+// ===== 操作 =====
+function addRow() {
+  R.push(nr());
+  render();
+  setTimeout(()=>{ document.querySelector('.tbl-wrap').scrollTop=99999; },50);
+}
+function delRow(i) { if(R.length<=1)return; R.splice(i,1); render(); }
+function recalc() { updCalcLabels(); updSum(); }
+
+// ===== 保存 / 読込 =====
+function saveData() {
+  const d = {
+    pName: document.getElementById('pName').value,
+    pDate: document.getElementById('pDate').value,
+    pObs: document.getElementById('pObs').value,
+    pRec: document.getElementById('pRec').value,
+    pWea: document.getElementById('pWea').value,
+    pGH: document.getElementById('pGH').value,
+    rows: R,
+  };
+  localStorage.setItem('lvl_book', JSON.stringify(d));
+  showToast('保存しました ✓');
+}
+
+function loadData() {
+  const s = localStorage.getItem('lvl_book');
+  if(!s) return false;
+  try {
+    const d = JSON.parse(s);
+    document.getElementById('pName').value = d.pName||'';
+    document.getElementById('pDate').value = d.pDate||'';
+    document.getElementById('pObs').value = d.pObs||'';
+    document.getElementById('pRec').value = d.pRec||'';
+    document.getElementById('pWea').value = d.pWea||'';
+    document.getElementById('pGH').value = d.pGH||'';
+    R = d.rows||[];
+    return true;
+  } catch(e) { return false; }
+}
+
+// ===== CSV =====
+function exportCSV() {
+  const res = calc();
+  let c = '\uFEFF';
+  c += '路線名,'+document.getElementById('pName').value+'\n';
+  c += '測量日,'+document.getElementById('pDate').value+'\n';
+  c += '観測者,'+document.getElementById('pObs').value+'\n';
+  c += '記録者,'+document.getElementById('pRec').value+'\n';
+  c += '天候,'+document.getElementById('pWea').value+'\n';
+  c += '出発点GH,'+document.getElementById('pGH').value+'\n\n';
+  c += 'No.,測点名,BS後視(m),IH器械高(m),FS前視(m),GH地盤高(m),備考\n';
+  let sB=0,sF=0;
+  R.forEach((r,i) => {
+    const b=pf(r.bs),f=pf(r.fs);
+    if(b!==null) sB+=b;
+    if(f!==null) sF+=f;
+    const ih=res[i]?.ih, gh=res[i]?.gh;
+    c+=`${i+1},${r.pt},${b!==null?b.toFixed(3):''},${ih!==null?ih.toFixed(3):''},${f!==null?f.toFixed(3):''},${gh!==null?gh.toFixed(3):''},${r.mm}\n`;
+  });
+  c+=`,合計,${sB.toFixed(3)},,${sF.toFixed(3)},,\n`;
+
+  const blob = new Blob([c],{type:'text/csv;charset=utf-8;'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `野帳_${document.getElementById('pName').value||'無題'}_${document.getElementById('pDate').value||'日付なし'}.csv`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+  showToast('CSVを出力しました');
+}
+
+// ===== クリア =====
+function confirmClear() { document.getElementById('clrM').classList.add('on'); }
+function closeModal() { document.getElementById('clrM').classList.remove('on'); }
+function clearAll() {
+  closeModal();
+  localStorage.removeItem('lvl_book');
+  document.getElementById('pName').value='';
+  document.getElementById('pDate').value=new Date().toISOString().split('T')[0];
+  document.getElementById('pObs').value='';
+  document.getElementById('pRec').value='';
+  document.getElementById('pWea').value='';
+  document.getElementById('pGH').value='';
+  R=[]; for(let i=0;i<5;i++) R.push(nr());
+  render();
+  showToast('新規作成しました');
+}
+
+// ===== トースト =====
+function showToast(m) {
+  const t=document.getElementById('toast');
+  t.textContent=m; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2500);
+}
+
+// ===== 初期化 =====
+document.getElementById('pDate').value = new Date().toISOString().split('T')[0];
+if(!loadData()) { for(let i=0;i<5;i++) R.push(nr()); }
+render();
+</script>
+</body>
+</html>
